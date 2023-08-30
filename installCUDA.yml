@@ -1,0 +1,62 @@
+---
+###Play book installs the cuda driver, and toolkit to node
+- name: Install and configure CUDA, and toolkit
+  become: true
+  gather_facts: false
+  hosts: all
+  tasks:
+    - name: Block novueau 
+      lineinfile:
+        path: /etc/modprobe.d/blacklist-nouveau.conf
+        line: options nouveau modeset=0
+        state: present
+        create: true
+
+    - name: Update init ramfs
+      shell: update-initramfs -u
+
+    - name: Reboot the server
+      shell: "sleep 5 && reboot"
+      async: 1
+      poll: 0
+
+    - name: Wait for the host to boot
+      wait_for:
+        port: 22
+        host: "{{ inventory_hostname }}"
+        delay: 60
+        timeout: 120
+      connection: local
+
+    - name: Install needed packages
+      apt:
+        name:
+          - pkg-config
+          - libglvnd-dev
+          - gcc 
+          - g++
+          - default-jre 
+          - make
+        state: present
+        update_cache: yes
+
+    - name: Copy driver, and toolkit
+      copy:
+        src: files/{{ item }}
+        dest: /home/administrator
+      loop:
+        - "{{ DRIVERNAME }}"
+        - "{{ TOOLKITNAME }}"
+
+    - name: Install nvidia driver
+      shell: "/home/administrator/{{ DRIVERNAME }} -s"
+
+    - name: Install nvidia toolkit
+      shell: "/home/administrator/{{ TOOLKITNAME }} --toolkit --samples --silent"
+
+    - name: Adding path
+      lineinfile:
+        path: /etc/profile
+        line: "PATH=${PATH}:/{{ CUDADIR }}"
+        state: present
+
