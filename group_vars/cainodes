@@ -1,3 +1,3 @@
 DRIVERNAME: NVIDIA-Linux-x86_64-470.182.03.run
-TOOLKITNAME: cuda_11.4.3_470.82.01_linux.run
-CUDADIR: /usr/local/cuda-11.4/bin
+TOOLKITNAME: cuda_11.5.1_495.29.05_linux.run
+CUDADIR: /usr/local/cuda-11.5/bin

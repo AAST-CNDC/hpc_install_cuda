@@ -44,6 +44,7 @@
       copy:
         src: files/{{ item }}
         dest: /home/administrator
+        mode: 0555
       loop:
         - "{{ DRIVERNAME }}"
         - "{{ TOOLKITNAME }}"
