@@ -5,6 +5,10 @@
   gather_facts: false
   hosts: all
   tasks:
+    - name: Set node hostname
+      ansible.builtin.hostname:
+              name: "{{ inventory_hostname }}"
+
     - name: Block novueau 
       lineinfile:
         path: /etc/modprobe.d/blacklist-nouveau.conf
