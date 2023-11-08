@@ -3,9 +3,17 @@
 #### Join AD fro https://zerosandones.us/2023/01/06/join-linux-to-active-directory/
 - name: Install and configure CUDA, and toolkit
   become: true
-  gather_facts: false
+  gather_facts: true
   hosts: all
+  vars:
+          HOSTIP: "{{ ansible_default_ipv4.address }}"
   tasks:
+    - name: Update hosts file
+      lineinfile:
+              path: /etc/hosts
+              line: "{{ HOSTIP }} {{ inventory_hostname }}"
+              state: present
+
     - name: Resize ubuntu-lv volume to the max size
       lvol:
               vg: ubuntu-vg
