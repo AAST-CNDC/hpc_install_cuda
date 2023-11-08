@@ -1,3 +1,6 @@
 DRIVERNAME: NVIDIA-Linux-x86_64-470.182.03.run
 TOOLKITNAME: cuda_11.5.1_495.29.05_linux.run
 CUDADIR: /usr/local/cuda-11.5/bin
+ADDOMAIN: student.aast.edu
+ADUSER: stadmin
+ADPASS: CNDC@aast

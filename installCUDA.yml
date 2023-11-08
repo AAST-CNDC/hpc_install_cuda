@@ -1,5 +1,6 @@
 ---
 ###Play book installs the cuda driver, and toolkit to node
+#### Join AD fro https://zerosandones.us/2023/01/06/join-linux-to-active-directory/
 - name: Install and configure CUDA, and toolkit
   become: true
   gather_facts: false
@@ -15,6 +16,53 @@
     - name: Set node hostname
       ansible.builtin.hostname:
               name: "{{ inventory_hostname }}"
+
+    - name: Install realme packages
+      apt:
+              name: 
+               - realmd 
+               - sssd 
+               - libnss-sss 
+               - libpam-sss
+              state: present
+              update_cache: yes
+
+    - name: Discover student.aast.edu domain
+      command: realm discover {{ ADDOMAIN }}
+
+    - name: Join student AD Domain
+      command:  realm join {{ ADDOMAIN }} --install=/ -U {{ ADUSER }}%{{ ADPASS }}
+      register: join_result
+      ignore_errors: yes
+
+    - name: Check the AD join result
+      fail:
+               msg: "Unable to join the AD domain, {{ join_result.stderr }}"
+      when: join_result.rc != 0
+
+    - name: Disable GPO
+      lineinfile:
+               path: /etc/sssd/sssd.conf
+               line: ad_gpo_access_control = permissive
+               state: present
+
+    - name: Restart SSSD service
+      service:
+               name: sssd
+               state: restarted
+               enabled: yes
+
+    - name: Validate the AD join
+      command: getent passwd {{ ADUSER }}
+      register: validate_result
+      ignore_errors: yes
+
+    - name: Check the validation result
+      fail:
+              msg: "AD join validation failed, {{ validate_result.stderr }}"
+      when: validate_result.rc != 0
+
+    - meta: end_play
 
     - name: Block novueau 
       lineinfile:
