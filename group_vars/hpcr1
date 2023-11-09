@@ -5,3 +5,5 @@ ADDOMAIN: student.aast.edu
 ADUSER: stadmin
 ADPASS: CNDC@aast
 ADGROUP: vpn\ hpcgrid
+NFSSERVER: 172.20.5.182
+NFSHOMEPATH: /home

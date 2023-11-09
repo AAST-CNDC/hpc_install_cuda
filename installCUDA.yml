@@ -116,6 +116,23 @@
       args:
               creates: GroupRestriction
 
+    - name: Install nfs-common
+      apt:
+              name: 
+                  - nfs-common
+              state: present
+
+
+
+    - name: Add /home mount to /etc/fstab
+      lineinfile:
+              path: /etc/fstab
+              line: "{{ NFSSERVER }}:{{ NFSHOMEPATH }} /home nfs defaults 0 0"
+              state: present
+
+    - name: Apply mounts
+      shell: mount -a
+
     - name: End play
       meta: end_play
 
