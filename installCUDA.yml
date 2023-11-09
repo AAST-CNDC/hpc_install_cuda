@@ -111,6 +111,14 @@
               insertbefore: # end of pam-auth-update config
               line: session optional        pam_mkhomedir.so skel=/etc/skel umask=077
 
+    - name: Restrict group login
+      shell: realm deny --all && realm permit -g {{ ADGROUP }} && touch GroupRestriction
+      args:
+              creates: GroupRestriction
+
+    - name: End play
+      meta: end_play
+
     - name: Block novueau 
       lineinfile:
         path: /etc/modprobe.d/blacklist-nouveau.conf

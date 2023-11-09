@@ -4,3 +4,4 @@ CUDADIR: /usr/local/cuda-11.5/bin
 ADDOMAIN: student.aast.edu
 ADUSER: stadmin
 ADPASS: CNDC@aast
+ADGROUP: vpn\ hpcgrid
