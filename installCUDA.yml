@@ -8,6 +8,18 @@
   vars:
           HOSTIP: "{{ ansible_default_ipv4.address }}"
   tasks:
+
+    - name: Disable stub resolv
+      replace:
+              path: /etc/systemd/resolved.conf
+              regexp: '#DNSStubListener=yes'
+              replace: 'DNSStubListener=no'
+
+    - name: Reload resolved
+      service:
+              name: systemd-resolved.service
+              state: restarted
+
     - name: Update hosts file
       lineinfile:
               path: /etc/hosts
@@ -25,23 +37,40 @@
       ansible.builtin.hostname:
               name: "{{ inventory_hostname }}"
 
-    - name: Install realme packages
+    - name: Install realm packages
       apt:
               name: 
                - realmd 
                - sssd 
+               - sssd-tools 
                - libnss-sss 
-               - libpam-sss
+               - libpam-sss 
+               - adcli 
+               - samba-common-bin 
+               - oddjob 
+               - oddjob-mkhomedir 
+               - packagekit
               state: present
               update_cache: yes
+
+    - name: Check joined domain
+      shell: realm list | wc -l
+      register: joined_states
+      ignore_errors: yes
+
+    - name: Exit on error
+      fail:
+              msg: "Host {{ inventory_hostname }} is already a domain member"
+      when: joined_states['stdout']|int > 0
 
     - name: Discover student.aast.edu domain
       command: realm discover {{ ADDOMAIN }}
 
+      ##{{ ADDOMAIN }} --unattended --user={{ ADUSER }}%{{ ADPASS }}
     - name: Join student AD Domain
-      command:  realm join {{ ADDOMAIN }} --install=/ -U {{ ADUSER }}%{{ ADPASS }}
+      shell: echo '{{ ADPASS }}' | realm join {{ ADDOMAIN }} -U {{ ADUSER }}
       register: join_result
-      ignore_errors: yes
+      ignore_errors: no
 
     - name: Check the AD join result
       fail:
@@ -51,8 +80,14 @@
     - name: Disable GPO
       lineinfile:
                path: /etc/sssd/sssd.conf
-               line: ad_gpo_access_control = permissive
-               state: present
+               line: "ad_gpo_access_control = permissive"
+               insertafter: "[domain/{{ ADDOMAIN }}]"
+
+    - name: Disable service line at sssd.conf
+      replace:
+              path: /etc/sssd/sssd.conf
+              regexp: '^services ='
+              replace: '#services ='
 
     - name: Restart SSSD service
       service:
@@ -61,7 +96,7 @@
                enabled: yes
 
     - name: Validate the AD join
-      command: getent passwd {{ ADUSER }}
+      command: getent passwd {{ ADUSER }}@{{ ADDOMAIN }}
       register: validate_result
       ignore_errors: yes
 
@@ -70,7 +105,11 @@
               msg: "AD join validation failed, {{ validate_result.stderr }}"
       when: validate_result.rc != 0
 
-    - meta: end_play
+    - name: Configure PAM.D session
+      lineinfile:
+              path: /etc/pam.d/common-session
+              insertbefore: # end of pam-auth-update config
+              line: session optional        pam_mkhomedir.so skel=/etc/skel umask=077
 
     - name: Block novueau 
       lineinfile:
@@ -127,4 +166,3 @@
         path: /etc/profile
         line: "PATH=${PATH}:/{{ CUDADIR }}"
         state: present
-
