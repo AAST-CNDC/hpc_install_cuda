@@ -1,5 +1,11 @@
-    - name: End Play
+    - name: Detect NVIDIA hardware
+      shell: "lshw -C display|grep -c vendor: NVIDIA"
+      register: nvidia_count
+      ignore_errors: yes
+
+    - name: End if no nvidia GPU installed
       meta: end_play
+      when: nvidia_count['stdout']|int == 0
 
     - name: Block novueau 
       lineinfile:
