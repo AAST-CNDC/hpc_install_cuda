@@ -1,0 +1,71 @@
+    - name: Check joined domain
+      shell: realm list | wc -l
+      register: joined_states
+      ignore_errors: yes
+
+    - name: Exit on error
+      fail:
+              msg: "Host {{ inventory_hostname }} is already a domain member"
+      when: joined_states['stdout']|int > 0
+
+    - name: Discover student.aast.edu domain
+      command: realm discover {{ ADDOMAIN }}
+
+      ##{{ ADDOMAIN }} --unattended --user={{ ADUSER }}%{{ ADPASS }}
+    - name: Join student AD Domain
+      shell: echo '{{ ADPASS }}' | realm join {{ ADDOMAIN }} -U {{ ADUSER }}
+      register: join_result
+      ignore_errors: no
+
+    - name: Check the AD join result
+      fail:
+               msg: "Unable to join the AD domain, {{ join_result.stderr }}"
+      when: join_result.rc != 0
+
+    - name: Disable GPO
+      lineinfile:
+               path: /etc/sssd/sssd.conf
+               line: "ad_gpo_access_control = permissive"
+               insertafter: "[domain/{{ ADDOMAIN }}]"
+
+    - name: Disable service line at sssd.conf
+      replace:
+              path: /etc/sssd/sssd.conf
+              regexp: '^services ='
+              replace: '#services ='
+
+    - name: Restart SSSD service
+      service:
+               name: sssd
+               state: restarted
+               enabled: yes
+
+    - name: Validate the AD join
+      command: getent passwd {{ ADUSER }}@{{ ADDOMAIN }}
+      register: validate_result
+      ignore_errors: yes
+
+    - name: Check the validation result
+      fail:
+              msg: "AD join validation failed, {{ validate_result.stderr }}"
+      when: validate_result.rc != 0
+
+    - name: Configure PAM.D session
+      lineinfile:
+              path: /etc/pam.d/common-session
+              insertbefore: # end of pam-auth-update config
+              line: session optional        pam_mkhomedir.so skel=/etc/skel umask=077
+
+    - name: Restrict group login
+      shell: realm deny --all && realm permit -g {{ ADGROUP }} && touch GroupRestriction
+      args:
+              creates: GroupRestriction
+
+    - name: Add /home mount to /etc/fstab
+      lineinfile:
+              path: /etc/fstab
+              line: "{{ NFSSERVER }}:{{ NFSHOMEPATH }} /home nfs defaults 0 0"
+              state: present
+
+    - name: Apply mounts
+      shell: mount -a
