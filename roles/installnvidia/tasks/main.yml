@@ -1,5 +1,15 @@
-    - name: End Play
+########
+####Take care of something, here the lshw -c Display , display display deiveces connected. 
+###     The output passed to grep to count it. IF the NVIDIA found, the grep returns 1 as ST/OUT and 0 as exit code
+###             But when grep does not detect the work NVIDIA , it returns 0 as stdout, and 1 as exit code cause the grep failed.
+    - name: Detect NVIDIA hardware
+      shell: lshw -C display|grep -c NVIDIA
+      register: nvidia_count
+      failed_when: nvidia_count.rc == -1
+
+    - name: End if no nvidia GPU installed
       meta: end_play
+      when: nvidia_count['stdout']|int == 0
 
     - name: Block novueau 
       lineinfile:
