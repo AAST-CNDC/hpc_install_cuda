@@ -8,14 +8,8 @@
   vars:
           HOSTIP: "{{ ansible_default_ipv4.address }}"
 
-  tasks:
-          - name: Detect NVIDIA hardware
-            shell: "lshw -C display|grep -c vendor: NVIDIA"
-            register: nvidia_count
-            ignore_errors: yes
-
   roles:
-          #- initenv
-          #- joinad
+          - initenv
+          - joinad
           - installnvidia 
 
