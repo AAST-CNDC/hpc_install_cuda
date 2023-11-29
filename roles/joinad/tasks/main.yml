@@ -61,11 +61,37 @@
       args:
               creates: GroupRestriction
 
+    - name: Configure chrony
+      ansible.builtin.lineinfile:
+              path: /etc/chrony/chrony.conf
+              line: "{{ item }}"
+      with_items:
+          - "server 172.20.43.7"
+          - "server 172.20.43.8"
+          - "server 172.20.43.9"
+
+    - name: Restart chrony
+      ansible.builtin.service:
+               name: chronyd
+               state: restarted
+               enabled: true
+
+    - name: Set NTP sync to true
+      shell: timedatectl set-ntp true && touch set_ntp
+      args:
+              creates: set_ntp
+
+    - name: Set timezone
+      shell: timedatectl set-timezone {{ CLUSTER_ZONE }} && touch set_timezone
+      args:
+              creates: set_timezone
+
+
     - name: Add /home mount to /etc/fstab
       lineinfile:
-              path: /etc/fstab
-              line: "{{ NFSSERVER }}:{{ NFSHOMEPATH }} /home nfs defaults 0 0"
-              state: present
+             path: /etc/fstab
+             line: "{{ NFSSERVER }}:{{ NFSHOMEPATH }} /home nfs defaults 0 0"
+             state: present
 
     - name: Apply mounts
       shell: mount -a

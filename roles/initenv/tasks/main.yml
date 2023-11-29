@@ -46,5 +46,6 @@
                - g++
                - default-jre
                - make
+               - chrony
               state: present
               update_cache: yes
